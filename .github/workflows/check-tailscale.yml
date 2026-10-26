@@ -1,0 +1,79 @@
+name: check-tailscale
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Compare versions
+        id: version
+        run: |
+          CURRENT=$(sed -n 's/^TS_VERSION=.*:-\([^}]*\)}.*/\1/p' build.sh)
+          LATEST=$(curl -fsSL 'https://pkgs.tailscale.com/stable/?mode=json' | jq -r '.TarballsVersion')
+
+          echo "current=$CURRENT latest=$LATEST"
+          echo "current=$CURRENT" >>"$GITHUB_OUTPUT"
+          echo "latest=$LATEST" >>"$GITHUB_OUTPUT"
+
+          NEWEST=$(printf '%s\n%s\n' "$CURRENT" "$LATEST" | sort -V | tail -n 1)
+          if [ "$LATEST" != "$CURRENT" ] && [ "$NEWEST" = "$LATEST" ]; then
+            echo "outdated=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Open bump PR
+        if: steps.version.outputs.outdated == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT: ${{ steps.version.outputs.current }}
+          LATEST: ${{ steps.version.outputs.latest }}
+        run: |
+          BRANCH="bump/tailscale-$LATEST"
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; then
+            echo "$BRANCH already exists"
+            exit 0
+          fi
+
+          SHA256=$(curl -fsSL "https://pkgs.tailscale.com/stable/tailscale_${LATEST}_arm64.tgz.sha256" | cut -d' ' -f1)
+          case "$SHA256" in
+            *[!0-9a-f]* | "") echo "Bad checksum: $SHA256" >&2; exit 1 ;;
+          esac
+          [ "${#SHA256}" -eq 64 ] || { echo "Bad checksum length: $SHA256" >&2; exit 1; }
+
+          sed -i \
+            -e "s/^TS_VERSION=\"\${TS_VERSION:-.*}\"$/TS_VERSION=\"\${TS_VERSION:-$LATEST}\"/" \
+            -e "s/^TS_SHA256=\"\${TS_SHA256:-.*}\"$/TS_SHA256=\"\${TS_SHA256:-$SHA256}\"/" \
+            build.sh
+
+          # Fails before a PR exists if the tarball does not match the published checksum
+          ./build.sh
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git commit -am "chore: bump tailscale to $LATEST"
+          git push origin "$BRANCH"
+
+          cat >body.md <<EOF
+          Bumps the bundled Tailscale from $CURRENT to $LATEST.
+
+          - Changelog: https://tailscale.com/changelog#client
+          - SHA-256 (from pkgs.tailscale.com): \`$SHA256\`
+
+          Before merging, install the \`Tailscale.muxapp\` artifact from the build run on a device and check the menu, login and status.
+          After merging, tag a release: \`git tag vX.Y.Z && git push --tags\`.
+          EOF
+
+          gh pr create --head "$BRANCH" --base main --title "chore: bump tailscale to $LATEST" --body-file body.md
+          gh workflow run build.yml --ref "$BRANCH"

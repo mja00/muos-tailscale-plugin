@@ -48,6 +48,10 @@ tailscale ip -4
 - To use Headscale or another control server, put its URL on the first line of `MUOS/application/Tailscale/login_server`.
 - Daemon log: `/tmp/tailscaled.log`.
 
+## Releases
+
+A daily workflow checks `pkgs.tailscale.com` and opens a `chore: bump tailscale to X.Y.Z` PR when a new stable version ships. The PR's build run uploads `Tailscale.muxapp` as an artifact to test on a device. After merging, push a `vX.Y.Z` tag and the release workflow builds and publishes it.
+
 ## License
 
 MIT for this project. The bundled Tailscale binaries are BSD-3-Clause; their licence ships in the app as `bin/LICENSE.tailscale`. Tailscale is a trademark of Tailscale Inc.; this project is not affiliated with Tailscale or MustardOS.

@@ -1,0 +1,38 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Lint
+        run: shellcheck -s sh build.sh Tailscale/*.sh
+
+      - name: Build
+        run: ./build.sh
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          TS_VERSION=$(sed -n 's/^TS_VERSION=.*:-\([^}]*\)}.*/\1/p' build.sh)
+          SHA256=$(sha256sum dist/Tailscale.muxapp | cut -d' ' -f1)
+
+          cat >notes.md <<EOF
+          Bundles official Tailscale ${TS_VERSION} (arm64) for MustardOS 2606.0+.
+
+          Install: copy \`Tailscale.muxapp\` to \`ARCHIVE\` on SD1, install it from Applications > Archive Manager, then open Applications > Tailscale.
+
+          SHA-256: \`${SHA256}\`
+          EOF
+
+          gh release create "$TAG" dist/Tailscale.muxapp --title "$TAG" --notes-file notes.md

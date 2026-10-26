@@ -1,0 +1,29 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Bump PRs are opened with GITHUB_TOKEN, which cannot trigger pull_request runs, so the checker dispatches this instead
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Lint
+        run: shellcheck -s sh build.sh Tailscale/*.sh
+
+      - name: Build
+        run: ./build.sh
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Tailscale.muxapp
+          path: dist/Tailscale.muxapp
+          if-no-files-found: error

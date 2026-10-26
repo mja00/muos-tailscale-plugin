@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-  # Bump PRs are opened with GITHUB_TOKEN, which cannot trigger pull_request runs, so the checker dispatches this instead
+  # pull_request runs on bot-opened bump PRs wait for manual approval, so the checker dispatches this directly
   workflow_dispatch:
 
 permissions:

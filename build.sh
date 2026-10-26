@@ -2,8 +2,8 @@
 # Builds dist/Tailscale.muxapp with the official static arm64 Tailscale binaries.
 set -eu
 
-TS_VERSION="${TS_VERSION:-1.104.2}"
-TS_SHA256="${TS_SHA256:-5776aaa901b5ef1916e66be5bb54b9f481cd399c9c28db123a8cab620efa237b}"
+TS_VERSION="${TS_VERSION:-1.104.0}"
+TS_SHA256="${TS_SHA256:-}"
 TS_TARBALL="tailscale_${TS_VERSION}_arm64.tgz"
 TS_URL="https://pkgs.tailscale.com/stable/$TS_TARBALL"
 

@@ -71,7 +71,7 @@ jobs:
           - Changelog: https://tailscale.com/changelog#client
           - SHA-256 (from pkgs.tailscale.com): \`$SHA256\`
 
-          Before merging, install the \`Tailscale.muxapp\` artifact from the build run on a device and check the menu, login and status.
+          The build run smoke-tests this archive on an arm64 runner (daemon start, status JSON, menu login URL). It cannot cover the device kernel or MustardOS, so if possible also install the \`Tailscale.muxapp\` artifact on a device and check the menu, login and status.
           After merging, tag a release: \`git tag vX.Y.Z && git push --tags\`.
           EOF
 

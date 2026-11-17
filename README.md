@@ -11,6 +11,13 @@ Tested on the Anbernic RG34XXSP running MustardOS 2606.0. It should work on any 
 3. Open **Applications > Archive Manager** and install it.
 4. Open **Applications > Tailscale**.
 
+## Update
+
+1. Open **Applications > Tailscale** and choose **Stop Tailscale**, so the old daemon is not left running alongside the new CLI.
+2. Download the new `Tailscale.muxapp` from the [latest release](https://github.com/mja00/muos-tailscale-plugin/releases/latest) and copy it to the `ARCHIVE` folder on SD1, replacing the old one.
+3. Open **Applications > Archive Manager** and install it. Your login and settings are kept.
+4. Open **Applications > Tailscale**, choose **Start Tailscale**, then **Connect** if it does not reconnect on its own.
+
 ## Build
 
 ```sh
@@ -50,7 +57,7 @@ tailscale ip -4
 
 ## Releases
 
-A daily workflow checks `pkgs.tailscale.com` and opens a `chore: bump tailscale to X.Y.Z` PR when a new stable version ships. The PR's build run uploads `Tailscale.muxapp` as an artifact to test on a device. After merging, push a `vX.Y.Z` tag and the release workflow builds and publishes it.
+A daily workflow checks `pkgs.tailscale.com` and opens a `chore: bump tailscale to X.Y.Z` PR when a new stable version ships. The PR's build run smoke-tests the archive on an arm64 runner with `test/smoke.sh`, which installs the app, starts the daemon, checks the `status --json` fields the menu reads, and drives the menu through a pseudo-terminal until it shows a login URL. It cannot cover the device's 4.9 kernel or MustardOS, so the run also uploads `Tailscale.muxapp` to try on a device. After merging, push a `vX.Y.Z` tag and the release workflow builds and publishes it.
 
 ## License
 

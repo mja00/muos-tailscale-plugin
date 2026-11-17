@@ -23,7 +23,7 @@ trap CLEANUP EXIT
 
 unzip -q "$ROOT/dist/Tailscale.muxapp" -d "$WORK"
 
-for f in tailscale.sh menu.sh mux_launch.sh bin/tailscale bin/tailscaled; do
+for f in tailscale.sh menu.sh mux_launch.sh update.sh bin/tailscale bin/tailscaled; do
 	[ -x "$APP/$f" ] || FAIL "$f missing or not executable in the archive"
 done
 

@@ -17,6 +17,8 @@ jobs:
         run: shellcheck -s sh build.sh Tailscale/*.sh
 
       - name: Build
+        env:
+          APP_VERSION: ${{ github.ref_name }}
         run: ./build.sh
 
       - name: Publish release
@@ -26,13 +28,15 @@ jobs:
         run: |
           TS_VERSION=$(sed -n 's/^TS_VERSION=.*:-\([^}]*\)}.*/\1/p' build.sh)
           SHA256=$(sha256sum dist/Tailscale.muxapp | cut -d' ' -f1)
+          # The in-app updater verifies downloads against this file
+          printf '%s  Tailscale.muxapp\n' "$SHA256" >dist/Tailscale.muxapp.sha256
 
           cat >notes.md <<EOF
           Bundles official Tailscale ${TS_VERSION} (arm64) for MustardOS 2606.0+.
 
-          Install: copy \`Tailscale.muxapp\` to \`ARCHIVE\` on SD1, install it from Applications > Archive Manager, then open Applications > Tailscale.
+          Install: copy \`Tailscale.muxapp\` to \`ARCHIVE\` on SD1, install it from Applications > Archive Manager, then open Applications > Tailscale. Already on v1.0.3 or later? Choose Update in the app instead.
 
           SHA-256: \`${SHA256}\`
           EOF
 
-          gh release create "$TAG" dist/Tailscale.muxapp --title "$TAG" --notes-file notes.md
+          gh release create "$TAG" dist/Tailscale.muxapp dist/Tailscale.muxapp.sha256 --title "$TAG" --notes-file notes.md

@@ -13,6 +13,10 @@ Tested on the Anbernic RG34XXSP running MustardOS 2606.0. It should work on any 
 
 ## Update
 
+From v1.0.3, open **Applications > Tailscale**. When a newer release exists, the menu shows **Update available**; choose **Update to vX.Y.Z**. The app downloads the release from GitHub, checks its SHA-256, swaps itself in place, keeps your login, and restarts Tailscale if it was running. **Check for Updates** does the same on demand.
+
+On v1.0.2 or earlier, update by hand once:
+
 1. Open **Applications > Tailscale** and choose **Stop Tailscale**, so the old daemon is not left running alongside the new CLI.
 2. Download the new `Tailscale.muxapp` from the [latest release](https://github.com/mja00/muos-tailscale-plugin/releases/latest) and copy it to the `ARCHIVE` folder on SD1, replacing the old one.
 3. Open **Applications > Archive Manager** and install it. Your login and settings are kept.
@@ -24,7 +28,7 @@ Tested on the Anbernic RG34XXSP running MustardOS 2606.0. It should work on any 
 ./build.sh
 ```
 
-Downloads the pinned Tailscale release from `pkgs.tailscale.com`, checks its SHA-256, and writes `dist/Tailscale.muxapp`. To change the version, override both `TS_VERSION` and `TS_SHA256`.
+Downloads the pinned Tailscale release from `pkgs.tailscale.com`, checks its SHA-256, and writes `dist/Tailscale.muxapp`. To change the version, override both `TS_VERSION` and `TS_SHA256`. Set `APP_VERSION=vX.Y.Z` to stamp a release version; without it the build is marked `dev` and never updates itself.
 
 ## Use
 

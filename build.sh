@@ -6,6 +6,8 @@ TS_VERSION="${TS_VERSION:-1.104.7}"
 TS_SHA256="${TS_SHA256:-d6bed2720310b328b861f943d7b4016c5358a9bad60575eb51e8143b79068484}"
 TS_TARBALL="tailscale_${TS_VERSION}_arm64.tgz"
 TS_URL="https://pkgs.tailscale.com/stable/$TS_TARBALL"
+# Release builds pass their tag; anything else is a test build the in-app updater leaves alone
+APP_VERSION="${APP_VERSION:-dev}"
 
 ROOT=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 BUILD="$ROOT/build"
@@ -33,6 +35,7 @@ fi
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
 cp -R "$ROOT/Tailscale" "$STAGE/Tailscale"
+printf '%s\n' "$APP_VERSION" >"$STAGE/Tailscale/VERSION"
 mkdir -p "$STAGE/Tailscale/bin"
 tar -xzf "$BUILD/$TS_TARBALL" -C "$STAGE/Tailscale/bin" --strip-components=1 \
 	"tailscale_${TS_VERSION}_arm64/tailscale" "tailscale_${TS_VERSION}_arm64/tailscaled"

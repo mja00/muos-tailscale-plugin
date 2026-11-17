@@ -6,6 +6,9 @@ APP_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 SVC="$APP_DIR/tailscale.sh"
 TS="$APP_DIR/bin/tailscale"
 LOGIN_SERVER_FILE="$APP_DIR/login_server"
+UPDATER="$APP_DIR/update.sh"
+LATEST_FILE="/tmp/tailscale-app-latest"
+APP_VERSION=$(cat "$APP_DIR/VERSION" 2>/dev/null)
 
 JQ="/opt/muos/bin/jq"
 [ -x "$JQ" ] || JQ="jq"
@@ -69,6 +72,7 @@ REFRESH_STATUS() {
 	STATE="Daemon"
 	ADDR=""
 	NAME=""
+	UPDATE=$(cat "$LATEST_FILE" 2>/dev/null)
 
 	pidof tailscaled >/dev/null 2>&1 || return
 
@@ -116,15 +120,22 @@ BUILD_ITEMS() {
 		printf 'boot|Start on Boot: Off\n'
 	fi
 
+	if [ -n "$UPDATE" ]; then
+		printf 'update|Update to %s\n' "$UPDATE"
+	else
+		printf 'update|Check for Updates\n'
+	fi
+
 	printf 'exit|Exit\n'
 }
 
 DRAW() {
 	CLEAR
-	printf ' Tailscale %s\n\n' "${VERSION:-}"
+	printf ' Tailscale %s   App %s\n\n' "${VERSION:-}" "${APP_VERSION:-unknown}"
 	printf ' Status:  %s\n' "$(STATE_LABEL)"
 	[ -n "$ADDR" ] && printf ' Address: %s\n' "$ADDR"
 	[ -n "$NAME" ] && printf ' Name:    %s\n' "$NAME"
+	[ -n "$UPDATE" ] && printf ' %sUpdate available: %s%s\n' "$REV" "$UPDATE" "$RST"
 	printf '\n'
 
 	i=1
@@ -175,6 +186,19 @@ ACTION_PEERS() {
 	PAUSE
 }
 
+ACTION_UPDATE() {
+	CLEAR
+	printf 'Checking for updates...\n'
+	"$UPDATER" install
+	PAUSE
+
+	# This menu is still the old version, so reopen the one that was just installed
+	if [ "$(cat "$APP_DIR/VERSION" 2>/dev/null)" != "$APP_VERSION" ]; then
+		RESTORE_TTY
+		exec sh "$APP_DIR/menu.sh"
+	fi
+}
+
 RUN_STEP() {
 	CLEAR
 	printf '%s\n' "$1"
@@ -203,6 +227,7 @@ ACTION() {
 				RUN_STEP "Enabling start on boot..." "$SVC" autostart on
 			fi
 			;;
+		update) ACTION_UPDATE ;;
 		exit) exit 0 ;;
 	esac
 }
@@ -211,6 +236,9 @@ ACTION() {
 if pidof tailscaled >/dev/null 2>&1; then
 	"$SVC" start
 fi
+
+# Runs in the background so a slow or missing network never delays the menu
+"$UPDATER" check >/dev/null 2>&1 &
 
 while :; do
 	REFRESH_STATUS

@@ -207,6 +207,11 @@ ACTION() {
 	esac
 }
 
+# Picks up an app update without making the user stop and start Tailscale; start is a no-op otherwise
+if pidof tailscaled >/dev/null 2>&1; then
+	"$SVC" start
+fi
+
 while :; do
 	REFRESH_STATUS
 	ITEMS=$(BUILD_ITEMS)

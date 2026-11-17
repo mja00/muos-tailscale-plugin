@@ -23,6 +23,14 @@ TS_RUNNING() {
 	[ -n "$(TS_PIDS)" ]
 }
 
+# Archive Manager replaces the binaries but leaves the previous daemon running, and the CLI rejects a mismatched daemon
+DAEMON_STALE() {
+	VERSIONS=$("$TS_CLI" version --daemon --json 2>/dev/null) || return 1
+	CLIENT=$(printf '%s' "$VERSIONS" | sed -n 's/.*"long": "\([^"]*\)".*/\1/p')
+	DAEMON=$(printf '%s' "$VERSIONS" | sed -n 's/.*"daemonLong": "\([^"]*\)".*/\1/p')
+	[ -n "$DAEMON" ] && [ "$CLIENT" != "$DAEMON" ]
+}
+
 # Users upgrading in place from 2601 keep their old node identity instead of re-authenticating
 MIGRATE_LEGACY_STATE() {
 	if [ ! -f "$TS_STATEDIR/tailscaled.state" ] && [ -f "$TS_LEGACY_STATEDIR/tailscaled.state" ]; then
@@ -43,7 +51,10 @@ TUN_MODE() {
 }
 
 START() {
-	TS_RUNNING && return 0
+	if TS_RUNNING; then
+		DAEMON_STALE || return 0
+		STOP
+	fi
 
 	mkdir -p "$TS_STATEDIR" "$TS_RUNDIR"
 	MIGRATE_LEGACY_STATE
